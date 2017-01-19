@@ -1,4 +1,12 @@
-#include "logitech-mouse.h"
+/*
+ Copyright (C) 2017 Ronan Gaillard <ronan.gaillard@live.fr>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ version 2 as published by the Free Software Foundation.
+*/
+ 
+ #include "logitech-mouse.h"
 
 logiMouse::logiMouse(uint8_t _cepin, uint8_t _cspin) : radio(_cepin, _cspin)
 {
