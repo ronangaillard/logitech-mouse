@@ -7,7 +7,7 @@ We managed to make an Arduino act like a Logitech wireless mouse using a NRF24. 
 
 This code makes the mouse move in circle on the screen.
 
-```
+```cpp
 #include "logitech-mouse.h"
 
 logiMouse myMouse;
@@ -48,4 +48,10 @@ The class we created is called `logiMouse`.
 - `void begin()` : inits NRF24 module for wireless communication
 - `void pair()` : pairs Arduino with Logitech dongle (don't forget to put the dongle into pairing mode using the unifying desktop app)
 - `void move(uint16_t x, uint16_t y)` : moves the mouse on the screen according to specified velocity (x,y)
+
+## Copyright
+
+The NRF24 lib included in this repo was written by Coliz <maniacbug@ymail.com>, all rights reserved to him.
+
+We are the author of both files : `logitech-mouse.cpp` and `logitech-mouse.h`
 
