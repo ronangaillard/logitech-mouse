@@ -88,8 +88,8 @@ void logiMouse::pair()
     pairingStep(pairing_packet_1, pairing_packet_1_bis, buffer);
 
     /* Generate dongle and device address */
-    byte new_add[5];
-    byte new_add_dongle[5];
+    uint8_t new_add[5];
+    uint8_t new_add_dongle[5];
 
     for (int i = 0; i < 5; i++)
     {
@@ -134,7 +134,7 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t
 
 void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick)
 {
-    byte mouse_payload[] = {0x00, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    uint8_t mouse_payload[] = {0x00, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     uint32_t cursor_velocity;
 
