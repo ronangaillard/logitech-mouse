@@ -33,7 +33,9 @@ void loop() {
   int x, y = 0;
 
   for(x = 0; x < 360; x+=5) {
-    myMouse.move( (uint16_t)(mouseSpeed * cos( ((float)x) * degreesToRadians ) ),  (uint16_t)(mouseSpeed * sin( ((float)x) * degreesToRadians ) ));
+    myMouse.move( (uint16_t)(mouseSpeed * cos( ((float)x) * degreesToRadians ) ),  
+      (uint16_t)(mouseSpeed * sin( ((float)x) * degreesToRadians ) ));
+      
     delay(10);
   }
 }
