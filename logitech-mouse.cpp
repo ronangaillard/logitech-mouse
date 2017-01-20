@@ -53,21 +53,40 @@ void logiMouse::setChecksum(uint8_t *payload, uint8_t len)
     payload[len - 1] = -checksum;
 }
 
+void logiMouse::pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload)
+{
+    bool keep_going = true;
+
+    while (keep_going)
+    {
+
+        if (radio.available())
+            break;
+
+        while (!radio.write(pairing_packet, 22, 0))
+        {
+        }
+
+        if (radio.available())
+            break;
+
+        while (keep_going)
+        {
+            if (radio.write(pairing_packet_small, 5, 0))
+                if (radio.available())
+                    keep_going = false;
+        }
+    }
+
+    radio.read(ack_payload, 22);
+}
+
 void logiMouse::pair()
 {
     uint8_t buffer[22];
 
     /* Pairing step 1 */
-    while (1)
-    {
-        delay(10);
-        radio.write(pairing_packet_1, 22, 1);
-        if (radio.write(pairing_packet_1_bis, 5, 0))
-            if (radio.available())
-                break;
-    }
-
-    radio.read(buffer, 22);
+    pairingStep(pairing_packet_1, pairing_packet_1_bis, buffer);
 
     /* Generate dongle and device address */
     byte new_add[5];
@@ -87,57 +106,11 @@ void logiMouse::pair()
     radio.openReadingPipe(1, new_add);
     radio.openWritingPipe(new_add);
 
-    bool keep_going = true;
-
     /* Pairing step 2 */
-    while (keep_going)
-    {
-
-        if (radio.available())
-            break;
-
-        while (!radio.write(pairing_packet_2, 22, 0))
-        {
-        }
-
-        if (radio.available())
-            break;
-
-        while (keep_going)
-        {
-            if (radio.write(pairing_packet_2_bis, 5, 0))
-                if (radio.available())
-                    keep_going = false;
-        }
-    }
-
-    radio.read(buffer, 22);
-
-    keep_going = true;
-
+    pairingStep(pairing_packet_2, pairing_packet_2_bis, buffer);
+    
     /* Pairing step 3 */
-    while (keep_going)
-    {
-
-        if (radio.available())
-            break;
-
-        while (!radio.write(pairing_packet_3, 22, 0))
-        {
-        }
-
-        if (radio.available())
-            break;
-
-        while (keep_going)
-        {
-            if (radio.write(pairing_packet_3_bis, 5, 0))
-                if (radio.available())
-                    keep_going = false;
-        }
-    }
-
-    radio.read(buffer, 22);
+    pairingStep(pairing_packet_3, pairing_packet_3_bis, buffer);
 
     /* Pairing step 4 */
     while (!radio.write(pairing_packet_4, 22, 0))
