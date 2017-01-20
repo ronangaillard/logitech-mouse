@@ -45,9 +45,11 @@ The class we created is called `logiMouse`.
 
 ### Methods
 
-- `void begin()` : inits NRF24 module for wireless communication
+- `bool begin()` : inits NRF24 module for wireless communication
 - `void pair()` : pairs Arduino with Logitech dongle (don't forget to put the dongle into pairing mode using the unifying desktop app)
 - `void move(uint16_t x, uint16_t y)` : moves the mouse on the screen according to specified velocity (x,y)
+- `void move(uint16_t x, uint16_t y, bool leftClick, bool rightClick)` : moves the mouse on the screen according to specified velocity (x,y), and click according to booleans
+- `void click(bool leftClick, bool rightClick)` : clicks according to booleans
 
 ## Copyright
 

@@ -162,7 +162,7 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool righ
 
     if(leftClick)
         mouse_payload[2] = 1;
-        
+
     if(rightClick)
         mouse_payload[2] |= 1 << 1;
 
@@ -173,4 +173,8 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool righ
     }
 
     radio.flush_rx();
+}
+
+void logiMouse::click(bool leftClick, bool rightClick) {
+    move(0, 0, leftClick, rightClick);
 }
