@@ -147,6 +147,11 @@ void logiMouse::pair()
 
 void logiMouse::move(uint16_t x_move, uint16_t y_move)
 {
+    move(x_move, y_move, false, false);
+}
+
+void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick)
+{
     byte mouse_payload[] = {0x00, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     uint32_t cursor_velocity;
@@ -154,6 +159,12 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move)
     cursor_velocity = ((uint32_t)y_move & 0xFFF) << 12 | (x_move & 0xFFF);
 
     memcpy(mouse_payload + 4, &cursor_velocity, 3);
+
+    if(leftClick)
+        mouse_payload[2] = 1;
+        
+    if(rightClick)
+        mouse_payload[2] |= 1 << 1;
 
     setChecksum(mouse_payload, 10);
 

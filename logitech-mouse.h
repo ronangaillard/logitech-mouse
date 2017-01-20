@@ -46,6 +46,7 @@ class logiMouse
   void pair();
 
   void move(uint16_t x_move, uint16_t y_move);
+  void move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick);
 };
 
 #endif
