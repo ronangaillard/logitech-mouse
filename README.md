@@ -13,7 +13,7 @@ This code makes the mouse move in circle on the screen.
 logiMouse myMouse;
 
 float mouseSpeed = 10.0f;
-float degreestofloat = 2.0f*3.14f/360.0f;
+float degreesToRadians = 2.0f*3.14f/360.0f;
 
 void setup() {
   Serial.begin(115200);
@@ -33,7 +33,7 @@ void loop() {
   int x, y = 0;
 
   for(x = 0; x < 360; x+=5) {
-    myMouse.move( (uint16_t)(mouseSpeed * cos( ((float)x) * degreestofloat ) ),  (uint16_t)(mouseSpeed * sin( ((float)x) * degreestofloat ) ));
+    myMouse.move( (uint16_t)(mouseSpeed * cos( ((float)x) * degreesToRadians ) ),  (uint16_t)(mouseSpeed * sin( ((float)x) * degreesToRadians ) ));
     delay(10);
   }
 }
