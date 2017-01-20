@@ -6,7 +6,7 @@
  version 2 as published by the Free Software Foundation.
 */
  
- #include "logitech-mouse.h"
+#include "logitech-mouse.h"
 
 logiMouse::logiMouse(uint8_t _cepin, uint8_t _cspin) : radio(_cepin, _cspin)
 {
@@ -59,7 +59,6 @@ void logiMouse::pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_sma
 
     while (keep_going)
     {
-
         if (radio.available())
             break;
 
