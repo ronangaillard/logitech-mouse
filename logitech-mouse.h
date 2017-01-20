@@ -47,7 +47,11 @@ class logiMouse
 
   void move(uint16_t x_move, uint16_t y_move);
   void move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick);
+  void move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h);
+  void move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick);
   void click(bool leftClick, bool rightClick);
+  void scroll(uint8_t scroll_v, uint8_t scroll_h);
+  void scroll(uint8_t scroll_v);
 };
 
 #endif

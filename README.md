@@ -45,11 +45,27 @@ The class we created is called `logiMouse`.
 
 ### Methods
 
+#### General methods
+
 - `bool begin()` : inits NRF24 module for wireless communication
 - `void pair()` : pairs Arduino with Logitech dongle (don't forget to put the dongle into pairing mode using the unifying desktop app)
-- `void move(uint16_t x, uint16_t y)` : moves the mouse on the screen according to specified velocity (x,y)
-- `void move(uint16_t x, uint16_t y, bool leftClick, bool rightClick)` : moves the mouse on the screen according to specified velocity (x,y), and click according to booleans
+
+#### Move methods
+
+- `void move(uint16_t x_move, uint16_t y_move)` : moves the mouse on the screen according to specified velocity (x,y)
+- `void move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick)` : moves the mouse on the screen according to specified velocity (x,y), and click according to booleans
+- `void move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h)` : moves and scrolls (see scrolls methods for more info)
+- `void move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick)` : moves, scrolls and clicks (see related methods for more info)
+
+#### Scroll methods
+
+- `void scroll(uint8_t scroll_v, uint8_t scroll_h)` : scrolls horizontally and vertically (_scroll_v_ and _scroll_h_ can be negative)
+- `void scroll(uint8_t scroll_v)` : scrolls vertically (_scroll_v_ can be negative)
+
+#### Click methods
+
 - `void click(bool leftClick, bool rightClick)` : clicks according to booleans
+
 
 ## Copyright
 

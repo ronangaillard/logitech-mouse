@@ -152,6 +152,16 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move)
 
 void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick)
 {
+    move(x_move, y_move, 0, 0, false, false);
+}
+
+void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h)
+{
+    move(x_move, y_move, scroll_v, scroll_h, false, false);
+}
+
+void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick)
+{
     byte mouse_payload[] = {0x00, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     uint32_t cursor_velocity;
@@ -166,6 +176,9 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool righ
     if(rightClick)
         mouse_payload[2] |= 1 << 1;
 
+    mouse_payload[7] = scroll_v;
+    mouse_payload[8] = scroll_h;
+
     setChecksum(mouse_payload, 10);
 
     while (!radio.write(mouse_payload, 10, 0))
@@ -177,4 +190,14 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool righ
 
 void logiMouse::click(bool leftClick, bool rightClick) {
     move(0, 0, leftClick, rightClick);
+}
+
+void logiMouse::scroll(uint8_t scroll_v, uint8_t scroll_h)
+{
+     move(0, 0, scroll_v, scroll_h, false, false);
+}
+
+void logiMouse::scroll(uint8_t scroll_v)
+{
+    scroll(scroll_v, 0);
 }
