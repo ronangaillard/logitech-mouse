@@ -41,20 +41,12 @@ logiMouse logi_mouse(7, 8);
 #define YAW_THRESHOLD 0.50
 #define CLICK_ACCEL_THRESHOLD 0.3
 #define CLICK_SIMPLE_ZERO_PASS_THRESHOLD 7
-#define CLICK_DOUBLE_ZERO_PASS_THRESHOLD 12
-#define CLICK_RESET_COUNT 4
-#define YPR_THRESHOLD 0.01
-#define YPR_AMP 1500
+#define CLICK_DOUBLE_ZERO_PASS_THRESHOLD 15
+#define CLICK_RESET_COUNT 5
+#define YPR_THRESHOLD 0.002
+#define Y_YPR_AMP 3000
+#define X_YPR_AMP 3500
 
-#define LOW_PASS_LENGTH 10
-
-int low_pass_coeffs[LOW_PASS_LENGTH] = {1, 1, 2, 3, 4, 4, 3, 2, 1, 1};
-
-struct acceleration_memory {
-    float x[LOW_PASS_LENGTH];
-    float y[LOW_PASS_LENGTH];
-    float z[LOW_PASS_LENGTH];
-};
 
 struct gyro_val {
     int16_t ax;
@@ -63,6 +55,14 @@ struct gyro_val {
     int16_t gx;
     int16_t gy;
     int16_t gz;
+};
+
+struct click_follow {
+    int zero_pass_count=0;
+    VectorFloat accel_max = VectorFloat(0, 0, 0);
+    VectorFloat last_acc = VectorFloat(0, 0, 0);
+    int reset_count = CLICK_RESET_COUNT + 1;
+    char click=0;
 };
 
 bool blinkState = false;
@@ -85,7 +85,10 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 int error;
 
 gyro_val av;  //accelereometer values
-char click; 
+click_follow click; 
+VectorFloat moy_acc(0, 0, 1);
+VectorFloat acc(0, 0, 1);
+Quaternion user_axis;
 
 
 // ================================================================
@@ -96,49 +99,6 @@ char click;
 volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
 void dmpDataReady() {
     mpuInterrupt = true;
-}
-
-void stabilize() {
-    VectorFloat accel;
-    VectorFloat moy_acc(3.0,3.0,3.0);
-    if (!dmpReady) return;
-    Serial.println("start stabilization");
-    int count = 0;
-    do {
-        
-        error = get_gyro_vals();
-        if (error == 0) {
-            mpu.getMotion6(&(av.ax), &(av.ay), &(av.az), &(av.gx), &(av.gy), &(av.gz));
-            accel.x = GRAVITY_CONSTANT * float(av.ax) / GRAVITY_SCALE;
-            accel.y = GRAVITY_CONSTANT * float(av.ay) / GRAVITY_SCALE;
-            accel.z = GRAVITY_CONSTANT * float(av.az) / GRAVITY_SCALE;
-
-            //update mean acceleration
-            moy_acc.x = moy_acc.x * INIT_ACC_UPDATE_RATIO + accel.x * (1.0 - INIT_ACC_UPDATE_RATIO);
-            moy_acc.y = moy_acc.y * INIT_ACC_UPDATE_RATIO + accel.y * (1.0 - INIT_ACC_UPDATE_RATIO);
-            moy_acc.z = moy_acc.z * INIT_ACC_UPDATE_RATIO + accel.z * (1.0 - INIT_ACC_UPDATE_RATIO);
-            accel.sub(moy_acc);
-            Serial.print(-3);
-            
-            Serial.print(", ");
-            Serial.print(-3 - MOVE_THRESHOLD_HIGH);
-            Serial.print(", ");
-            Serial.print(-3 + MOVE_THRESHOLD_HIGH);
-            Serial.print(", ");
-            Serial.print(-3 + accel.y);
-            Serial.print(", ");
-            Serial.print(count);
-            Serial.println();
-            if (abs(accel.x) < 0.03 && abs(accel.y) < 0.03 && abs(accel.z) < 0.03)
-                count++;
-            else
-                count = 0;
-        }
-        delay(2);
-    } while(count < 5);
-    last_ypr[0] = ypr[0];
-    last_ypr[1] = ypr[1];
-    last_ypr[2] = ypr[2];
 }
 // ================================================================
 // ===                      INITIAL SETUP                       ===
@@ -167,7 +127,7 @@ void setup() {
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
     Serial.println(mpu.getRate());
-    mpu.setRate(8);
+    //mpu.setRate(8);
 
     // supply your own gyro offsets here, scaled for min sensitivity
     mpu.setXGyroOffset(120);
@@ -208,7 +168,7 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
     if (!dmpReady) 
         {Serial.println("INIT FAILED!");}
-    stabilize();
+    //stabilize();
     
     Serial.print("begin started : ");
     Serial.println(logi_mouse.begin());
@@ -222,65 +182,64 @@ void setup() {
 // ===                    MAIN PROGRAM LOOP                     ===
 // ================================================================
 char avoid_val = 0;
+int successive_send_fail = 0;
 void loop() {
     // if programming failed, don't try to do anything
     if (!dmpReady) return;
     error = get_gyro_vals();
     if (error == 0) {
+
+        user_axis = user_repere(q);
+
+        mpu.getMotion6(&(av.ax), &(av.ay), &(av.az), &(av.gx), &(av.gy), &(av.gz));
+        acc.x = GRAVITY_CONSTANT * float(av.ax) / GRAVITY_SCALE;
+        acc.y = GRAVITY_CONSTANT * float(av.ay) / GRAVITY_SCALE;
+        acc.z = GRAVITY_CONSTANT * float(av.az) / GRAVITY_SCALE;
+        acc.rotate(&user_axis);
+        //update mean acceleration
+            
+        moy_acc.x = moy_acc.x * ACC_UPDATE_RATIO + acc.x * (1.0 - ACC_UPDATE_RATIO);
+        
+        moy_acc.y = moy_acc.y * ACC_UPDATE_RATIO + acc.y * (1.0 - ACC_UPDATE_RATIO);
+        
+        moy_acc.z = moy_acc.z * ACC_UPDATE_RATIO + acc.z * (1.0 - ACC_UPDATE_RATIO);
+            
+        acc.sub(moy_acc);
+
         int move_x = 0; 
         int move_y = 0; 
         if (abs(last_ypr[0] - ypr[0]) > YPR_THRESHOLD) {
-            move_x = int((last_ypr[0] - ypr[0]) * YPR_AMP);
+            move_x = int((last_ypr[0] - ypr[0]) * X_YPR_AMP);
             last_ypr[0] = ypr[0];
         }
-        if (abs(last_ypr[1] - ypr[1]) > YPR_THRESHOLD) {
-            move_y = int((last_ypr[1] - ypr[1]) * YPR_AMP);
-            last_ypr[1] = ypr[1];
+        if (abs(last_ypr[2] - ypr[2]) > YPR_THRESHOLD) {
+            move_y = int((last_ypr[2] - ypr[2]) * Y_YPR_AMP);
+            last_ypr[2] = ypr[2];
         }
-        if ( (move_x || move_y) && avoid_val == 0 ) {
-            uint32_t t1 = micros();
-            logi_mouse.move(-move_x, move_y);
-            Serial.println(micros() - t1);
-        } else {
-            //Serial.println("No move");
+        bool cliclick;
+        cliclick = click_detection();
+        Serial.print(int(cliclick) + 6);
+        Serial.print(", ");
+        Serial.println(click.zero_pass_count);
+        if ( (move_x || move_y || cliclick != 0) && avoid_val == 0 ) {
+            if (logi_mouse.move(-move_x, move_y, cliclick, false) == 0) 
+                successive_send_fail = 0;
+            else {
+                successive_send_fail++;
+            }
         }
         avoid_val = 0;
-        /*
-        Serial.print(ypr[0] + 6);
-        Serial.print(", ");
-        Serial.print(last_ypr[0] + 6);
-        Serial.print(", ");
-        Serial.print(6);
-        Serial.print(", ");
-        Serial.print(ypr[1] + 3 );
-        Serial.print(", ");
-        Serial.print(last_ypr[1] + 3 );
-        Serial.print(", ");
-        Serial.print(3);
-        Serial.print(", ");
-        Serial.print(ypr[2]);
-        Serial.print(", ");
-        Serial.print(0);
-        Serial.print(", ");
-        Serial.print(move_x - 3);
-        Serial.print(", ");
-        Serial.print(-3);
-        Serial.print(", ");
-        Serial.print(move_y - 6);
-        Serial.print(", ");
-        Serial.print(-6);
-        Serial.println();
-        */
-        
     } else {
-        //Serial.println("Error happened");
+        if (logi_mouse.move(0, 0) == 0) 
+            successive_send_fail = 0;
+        else {
+            successive_send_fail++;
+        }
     }
-}
-
-
-int click_detection() 
-{
-    return 0;
+    if (successive_send_fail > 50) {
+        logi_mouse.begin();
+        logi_mouse.pair();
+    }
 }
 
 
@@ -325,6 +284,11 @@ int get_gyro_vals()
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
 
+        while (fifoCount > 200) {
+            mpu.getFIFOBytes(fifoBuffer, packetSize);
+            fifoCount -= packetSize;
+        }
+
         #ifdef OUTPUT_READABLE_YAWPITCHROLL
             // display Euler angles in degrees
             mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -335,6 +299,47 @@ int get_gyro_vals()
         return 0;
     }
     return -1;
+}
+
+bool click_detection() 
+{
+    click_detection_axis(&click, acc.x, &(click.last_acc.x), &(click.accel_max.x));
+    click_detection_axis(&click, acc.y, &(click.last_acc.y), &(click.accel_max.y));
+    click_detection_axis(&click, acc.z, &(click.last_acc.z), &(click.accel_max.z));
+    click.reset_count++;
+    if (click.reset_count > CLICK_RESET_COUNT) {
+        click.reset_count = CLICK_RESET_COUNT + 1;
+        click.zero_pass_count = 0;
+        click.click = 0;
+        click.accel_max.x = 0;
+        click.accel_max.y = 0;
+        click.accel_max.z = 0;
+        click.last_acc.x = 0;
+        click.last_acc.y = 0;
+        click.last_acc.z = 0;
+    }
+    if (click.zero_pass_count > CLICK_SIMPLE_ZERO_PASS_THRESHOLD && click.click == 0) {
+        click.click = 1;
+        return 1;
+    }
+    else if (click.zero_pass_count > CLICK_DOUBLE_ZERO_PASS_THRESHOLD && click.click < 3) {
+        click.click = 3;
+        return 1;
+    }
+    return 0;
+}
+
+void click_detection_axis(click_follow* click, float acc, float* last_acc, float* max_acc)
+{
+    if(abs(acc) > CLICK_ACCEL_THRESHOLD ) {
+        if(*max_acc == 0) 
+            *max_acc = acc;
+        if ( SIGN(acc) != SIGN(*last_acc) ) {
+            (click->zero_pass_count)++;
+            click->reset_count = 0;
+        }
+        *last_acc = acc;
+    }
 }
 
 Quaternion user_repere(Quaternion quat) 

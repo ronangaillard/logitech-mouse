@@ -115,25 +115,25 @@ void logiMouse::pair()
     while (!radio.write(pairing_packet_4, 22, 0))
     {
     }
-    radio.setRetries(2, 1);
+    radio.setRetries(3, 1);
 }
 
-void logiMouse::move(uint16_t x_move, uint16_t y_move)
+int logiMouse::move(uint16_t x_move, uint16_t y_move)
 {
-    move(x_move, y_move, false, false);
+    return move(x_move, y_move, false, false);
 }
 
-void logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick)
+int logiMouse::move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick)
 {
-    move(x_move, y_move, 0, 0, false, false);
+    return move(x_move, y_move, 0, 0, leftClick, rightClick);
 }
 
-void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h)
+int logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h)
 {
-    move(x_move, y_move, scroll_v, scroll_h, false, false);
+    return move(x_move, y_move, scroll_v, scroll_h, false, false);
 }
 
-void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick)
+int logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t scroll_h, bool leftClick, bool rightClick)
 {
     uint8_t mouse_payload[] = {0x00, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -153,12 +153,24 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t
     mouse_payload[8] = scroll_h;
 
     setChecksum(mouse_payload, 10);
-    while (!radio.write(mouse_payload, 10, 0))
-    {
+    int count = 0;
+    if (!x_move && !y_move && !scroll_v && !scroll_h && !leftClick && !rightClick) {
+
+        byte keepalive_payload[] = {0x00, 0x40, 0xff, 0xff, 0xc2};
+
+        while (!radio.write(keepalive_payload, 5, 0) && count < 10)
+        {
+            count++;
+        }
+    } else {
+        while (!radio.write(mouse_payload, 10, 0) && count < 10)
+        {
+            count++;
+        }
     }
-    
 
     radio.flush_rx();
+    return count == 10 ? -1 : 0;
 }
 
 void logiMouse::click(bool leftClick, bool rightClick) {
