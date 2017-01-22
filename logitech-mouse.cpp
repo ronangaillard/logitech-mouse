@@ -157,6 +157,12 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t
     {
     }
 
+    // Send keepalive
+    byte keepalive_payload[] = {0x00, 0x40, 0xff, 0xff, 0xc2};
+    while (!radio.write(keepalive_payload, 5, 0))
+    {
+    }
+
     radio.flush_rx();
 }
 
