@@ -115,6 +115,7 @@ void logiMouse::pair()
     while (!radio.write(pairing_packet_4, 22, 0))
     {
     }
+    radio.setRetries(2, 1);
 }
 
 void logiMouse::move(uint16_t x_move, uint16_t y_move)
@@ -152,10 +153,10 @@ void logiMouse::move(uint16_t x_move, uint16_t y_move, uint8_t scroll_v, uint8_t
     mouse_payload[8] = scroll_h;
 
     setChecksum(mouse_payload, 10);
-
     while (!radio.write(mouse_payload, 10, 0))
     {
     }
+    
 
     radio.flush_rx();
 }
