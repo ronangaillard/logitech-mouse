@@ -174,7 +174,15 @@ void setup() {
     Serial.println(logi_mouse.begin());
     Serial.println("begin ended");
     Serial.println("pair started");
-    logi_mouse.pair();
+    if(logi_mouse.reconnect())
+    {
+        Serial.println("Reconnected using previous configuration !");
+    }
+    else
+    {
+        Serial.println("Unable to reconnect to dongle... Pairing with any dongle...");
+        logi_mouse.pair();
+    }
     Serial.println("pair ended");
     
 }
@@ -238,7 +246,8 @@ void loop() {
     }
     if (successive_send_fail > 50) {
         logi_mouse.begin();
-        logi_mouse.pair();
+        if(!logi_mouse.reconnect())
+            logi_mouse.pair();
     }
 }
 
