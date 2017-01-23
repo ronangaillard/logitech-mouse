@@ -156,23 +156,15 @@ bool logiMouse::pair(uint8_t timeout)
 bool logiMouse::reconnect()
 {
   #ifndef EEPROM_SUPPORT
-  Serial.println("Please enable EEPROM_SUPPORT in logitech-mouse.h");
+  #warning "EEPROM support is not enabled"
+  return false;
   #else
-  Serial.println("Reading address");
   uint8_t new_add[5];
 
   for (int i = 0; i < 5; i++)
       new_add[i] = EEPROM.read(MAC_ADDRESS_EEPROM_ADDRESS + i);
       
   setAddress(new_add);
-
-  Serial.print("Saved address : ");
-  for (int i = 0; i < 5; i++)
-  {
-      Serial.print(new_add[i], HEX);
-      Serial.print(":");
-  }
-  Serial.println();
 
   if(pair(255))
       return true;
