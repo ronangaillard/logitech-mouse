@@ -33,6 +33,7 @@ class logiMouse
   void setChecksum(uint8_t *payload, uint8_t len);
   bool pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload, uint8_t timeout);
   void setAddress(uint8_t *address);
+  void setAddress(uint64_t address);
 
   /* Pre-defined pairing packets */
   byte pairing_packet_1[22] = {0x15, 0x5F, 0x01, 0x84, 0x5E, 0x3A, 0xA2, 0x57, 0x08, 0x10, 0x25, 0x04, 0x00, 0x01, 0x47, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xEC};
