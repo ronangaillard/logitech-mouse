@@ -25,7 +25,7 @@ logiMouse::logiMouse() : logiMouse(DEFAULT_CE_PIN, DEFAULT_CS_PIN)
 
 void logiMouse::setAddress(uint64_t address)
 {
-    setAddress((uint8_t *)address);
+    setAddress((uint8_t *)&address);
 }
 
 void logiMouse::setAddress(uint8_t *address)
