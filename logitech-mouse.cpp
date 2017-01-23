@@ -8,6 +8,11 @@
  
 #include "logitech-mouse.h"
 
+
+#ifdef EEPROM_SUPPORT
+#include <EEPROM.h>
+#endif
+
 logiMouse::logiMouse(uint8_t _cepin, uint8_t _cspin) : radio(_cepin, _cspin)
 {
 
@@ -16,6 +21,24 @@ logiMouse::logiMouse(uint8_t _cepin, uint8_t _cspin) : radio(_cepin, _cspin)
 logiMouse::logiMouse() : logiMouse(DEFAULT_CE_PIN, DEFAULT_CS_PIN)
 {
 
+}
+
+void logiMouse::setAddress(uint64_t address)
+{
+    setAddress((uint8_t *)&address);
+}
+
+void logiMouse::setAddress(uint8_t *address)
+{
+    uint8_t address_dongle[5];
+
+    memcpy(address_dongle, address, 4);
+    address_dongle[0] = 0;
+    
+    radio.stopListening();
+    radio.openReadingPipe(2, address_dongle);
+    radio.openReadingPipe(1, address);
+    radio.openWritingPipe(address);
 }
 
 bool logiMouse::begin()
@@ -53,69 +76,108 @@ void logiMouse::setChecksum(uint8_t *payload, uint8_t len)
     payload[len - 1] = -checksum;
 }
 
-void logiMouse::pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload)
+bool logiMouse::pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload, uint8_t timeout)
 {
     bool keep_going = true;
+    uint8_t loop_counter = timeout;
 
-    while (keep_going)
+    while (keep_going && (timeout == 0 || loop_counter > 0))
     {
         if (radio.available())
             break;
 
-        while (!radio.write(pairing_packet, 22, 0))
-        {
-        }
+        while (!radio.write(pairing_packet, 22, 0) && (timeout == 0 || loop_counter > 0))
+            loop_counter--;
 
         if (radio.available())
             break;
 
-        while (keep_going)
+        while (keep_going && (timeout == 0 || loop_counter > 0))
         {
             if (radio.write(pairing_packet_small, 5, 0))
                 if (radio.available())
                     keep_going = false;
+
+            loop_counter--;
         }
     }
 
     radio.read(ack_payload, 22);
+
+    return (timeout == 0 || loop_counter > 0);
 }
 
-void logiMouse::pair()
+bool logiMouse::pair()
+{
+    return pair(0);
+}
+
+bool logiMouse::pair(uint8_t timeout)
 {
     uint8_t buffer[22];
+    uint8_t loop_counter = timeout;
 
     /* Pairing step 1 */
-    pairingStep(pairing_packet_1, pairing_packet_1_bis, buffer);
+    if(!pairingStep(pairing_packet_1, pairing_packet_1_bis, buffer, timeout))
+        return false;
 
     /* Generate dongle and device address */
     uint8_t new_add[5];
-    uint8_t new_add_dongle[5];
 
     for (int i = 0; i < 5; i++)
-    {
         new_add[i] = buffer[3 + (4 - i)];
-        new_add_dongle[i] = buffer[3 + (4 - i)];
-    }
 
-    new_add_dongle[0] = 0;
-
-    /* Switch addresses */
-    radio.stopListening();
-    radio.openReadingPipe(2, new_add_dongle);
-    radio.openReadingPipe(1, new_add);
-    radio.openWritingPipe(new_add);
+    setAddress(new_add);
 
     /* Pairing step 2 */
-    pairingStep(pairing_packet_2, pairing_packet_2_bis, buffer);
+    if(!pairingStep(pairing_packet_2, pairing_packet_2_bis, buffer, timeout))
+        return false;
     
     /* Pairing step 3 */
-    pairingStep(pairing_packet_3, pairing_packet_3_bis, buffer);
+    if(!pairingStep(pairing_packet_3, pairing_packet_3_bis, buffer, timeout))
+        return false;
 
     /* Pairing step 4 */
-    while (!radio.write(pairing_packet_4, 22, 0))
+    while (!radio.write(pairing_packet_4, 22, 0) && (timeout == 0 || loop_counter > 0) )
+        loop_counter--;
+
+    if(!(timeout == 0 || loop_counter > 0))
+        return false;
+
+    #ifdef EEPROM_SUPPORT
+    /* Save address to eeprom */
+    for (int i = 0; i < 5; i++)
     {
+        EEPROM.write(MAC_ADDRESS_EEPROM_ADDRESS + i, new_add[i]);
     }
+<<<<<<< HEAD
     radio.setRetries(3, 1);
+=======
+    #endif
+}
+
+bool logiMouse::reconnect()
+{
+  #ifndef EEPROM_SUPPORT
+  #warning "EEPROM support is not enabled"
+  return false;
+  #else
+  uint8_t new_add[5];
+
+  for (int i = 0; i < 5; i++)
+      new_add[i] = EEPROM.read(MAC_ADDRESS_EEPROM_ADDRESS + i);
+      
+  setAddress(new_add);
+
+  if(pair(255))
+      return true;
+  else {
+      setAddress(PAIRING_MAC_ADDRESS);
+      return false;
+  }
+
+  #endif
+>>>>>>> master
 }
 
 int logiMouse::move(uint16_t x_move, uint16_t y_move)
