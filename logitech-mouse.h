@@ -17,6 +17,12 @@
 #define CHANNEL 5
 #define PAYLOAD_SIZE 22
 #define PAIRING_MAC_ADDRESS 0xBB0ADCA575LL
+#define EEPROM_SUPPORT
+#define MAC_ADDRESS_EEPROM_ADDRESS 0
+
+#ifdef EEPROM_SUPPORT
+#include <EEPROM.h>
+#endif
 
 class logiMouse
 {
@@ -25,7 +31,8 @@ class logiMouse
   RF24 radio;
 
   void setChecksum(uint8_t *payload, uint8_t len);
-  void pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload);
+  bool pairingStep(uint8_t *pairing_packet, uint8_t *pairing_packet_small, uint8_t *ack_payload, uint8_t timeout);
+  void setAddress(uint8_t *address);
 
   /* Pre-defined pairing packets */
   byte pairing_packet_1[22] = {0x15, 0x5F, 0x01, 0x84, 0x5E, 0x3A, 0xA2, 0x57, 0x08, 0x10, 0x25, 0x04, 0x00, 0x01, 0x47, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xEC};
@@ -44,7 +51,9 @@ class logiMouse
 
   bool begin();
 
-  void pair();
+  bool pair();
+  bool pair(uint8_t timeout);
+  bool reconnect();
 
   void move(uint16_t x_move, uint16_t y_move);
   void move(uint16_t x_move, uint16_t y_move, bool leftClick, bool rightClick);
