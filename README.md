@@ -22,11 +22,17 @@ void setup() {
 
   myMouse.begin();
 
-  Serial.println("Pairing");
+  Serial.println("Trying to reconnect");
 
-  myMouse.pair();
-
-  Serial.println("Done :)");
+  if(myMouse.reconnect())
+      Serial.println("Reconnected using previous configuration !");
+  else
+  {
+      Serial.println("Unable to reconnect to dongle... Pairing with any dongle...");
+      myMouse.pair();
+  }
+    
+  Serial.println("Ready :)");
 }
 
 void loop() {
@@ -50,7 +56,9 @@ The class we created is called `logiMouse`.
 #### General methods
 
 - `bool begin()` : inits NRF24 module for wireless communication
-- `void pair()` : pairs Arduino with Logitech dongle (don't forget to put the dongle into pairing mode using the unifying desktop app)
+- `bool pair()` : pairs Arduino with Logitech dongle (don't forget to put the dongle into pairing mode using the unifying desktop app), returns false if pairing failed
+- `bool pair(uint8_t)` : pairs with timeout (exits if pairing takes too much time)
+- `bool reconnect()` : reconnects to previously connected dongle (exits if dongle is not found), returns true if success
 
 #### Move methods
 
